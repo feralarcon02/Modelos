@@ -24,6 +24,7 @@
 
 #define Pieza_A                        1
 #define Pieza_B                        2
+#define Pieza_D                        3
 
 #define Demora_Cola_Estacion_1         1
 #define Demora_Cola_Estacion_2         2
