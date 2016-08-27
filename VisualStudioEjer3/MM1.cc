@@ -25,12 +25,12 @@
 #define Pieza_A                        1
 #define Pieza_B                        2
 
-#define Demora_Cola_Estacion_1         1
-#define Demora_Cola_Estacion_2         2
-#define Demora_Cola_Estacion_3         3
-#define Demora_Cola_Estacion_4         4
-#define Demora_Cola_Estacion_5         5
-#define Demora_Cola_Estacion_6         6
+#define Demora_A_Limpieza              1
+#define Demora_B_Limpieza              2
+#define Demora_A_Lubricacion           3
+#define Demora_B_Control_Hum           4
+#define Demora_Espera_Ensamblado_A     5
+#define Demora_Espera_Ensamblado_B     6
 
 #define Media_Procesador_limpieza      1
 #define Media_Procesamiento_Ensamblado 2
@@ -142,6 +142,12 @@ void Rutina_Arribo_Limpieza_Ref(void)
 		list_file(LAST, Cola_Espera_Limpieza_Ref);
 	}
 	else {
+		if (transfer[3] == 1) {
+			sampst(0, Demora_A_Limpieza);
+		}
+		else {
+			sampst(0, Demora_B_Limpieza);
+		}
 		transfer[1] = sim_time + tiempo_constante_limpieza;
 		transfer[2] = Finaliza_Limpieza_Refinacion;
 		list_file(INCREASING, LIST_EVENT);
@@ -158,13 +164,15 @@ void Rutina_Fin_Limpieza_Ref(void) {
 		if (list_size[Procesador_Lubic_A] > 0) {
 			transfer[1] = sim_time;
 			transfer[2] = Fin_Lub_Calib_A;
-			list_file(LAST, Cola_Espera_Limpieza_Ref);
+			list_file(LAST, Cola_Espera_Lub_A);
+			list_file(FIRST, Procesador_Lubic_A);
 		}
 		else {
 			transfer[1] = sim_time + expon(media_lub_calib_A, Fin_Lub_Calib_A);
 			transfer[2] = Fin_Lub_Calib_A;
 			list_file(INCREASING, LIST_EVENT);
 			list_file(FIRST, Procesador_Lubic_A);
+			sampst(0, Cola_Espera_Lub_A);
 		}
 	}
 	else {
@@ -178,12 +186,20 @@ void Rutina_Fin_Limpieza_Ref(void) {
 			transfer[2] = Fin_Control_Humano_B;
 			list_file(INCREASING, LIST_EVENT);
 			list_file(FIRST, Procesador_Control_Human_B);
+			sampst(0, Demora_B_Control_Hum);
 		}
 	}
 	if (list_size[Cola_Espera_Limpieza_Ref] > 0) {
 		list_remove(FIRST, Cola_Espera_Limpieza_Ref);
+		if (transfer[3] == 1) {
+			sampst(sim_time - transfer[1], Demora_A_Limpieza);
+		}
+		else {
+			sampst(sim_time - transfer[1], Demora_B_Limpieza);
+		}
 		transfer[1] = sim_time + tiempo_constante_limpieza;
 		transfer[2] = Finaliza_Limpieza_Refinacion;
+		transfer[3];
 		list_file(INCREASING, LIST_EVENT);
 	}
 	else {
@@ -193,7 +209,6 @@ void Rutina_Fin_Limpieza_Ref(void) {
 }
 
 void Rutina_Fin_Lub_Calib_A(void) {
-
 
 	if (list_size[Procesador_Ensamblado] == 2) {
 		transfer[1] = sim_time;
@@ -229,6 +244,7 @@ void Rutina_Fin_Lub_Calib_A(void) {
 	}
 	if (list_size[Cola_Espera_Lub_A] > 0) {
 		list_remove(FIRST, Cola_Espera_Lub_A);
+		sampst(sim_time - transfer[1], Demora_A_Lubricacion);
 		transfer[1] = sim_time + expon(media_lub_calib_A, Fin_Lub_Calib_A);
 		transfer[2] = Fin_Lub_Calib_A;
 		list_file(INCREASING, LIST_EVENT);
@@ -280,6 +296,7 @@ void Rutina_Fin_Control_Humano_B(void) {
 
 	if (list_size[Cola_Espera_Control_Humano_B] > 0) {
 		list_remove(FIRST, Cola_Espera_Control_Humano_B);
+		sampst(sim_time - transfer[1], Demora_B_Control_Hum);
 		transfer[1] = sim_time + uniform(3, 5, Fin_Control_Humano_B);
 		transfer[2] = Fin_Control_Humano_B;
 		list_file(INCREASING, LIST_EVENT);
@@ -343,6 +360,23 @@ void reporte(void)
 	timest(0.0, -Media_Procesamiento_Ensamblado);
 	printf("\nUtilizacion Procesador Ensamblado mas preciso     : %f \n ", transfer[1]);
 	
+	sampst(0.0, -Demora_A_Limpieza);
+	printf("\nDemora media en cola limpieza, pieza A     : %f Horas \n ", transfer[1]/60);
+
+	sampst(0.0, -Demora_B_Limpieza);
+	printf("\nDemora media en cola limpieza, pieza B      : %f Horas\n ", transfer[1]/60);
+
+	printf("\n No se si son tan locos esos numeros, ya que si pensas el ejercicio, cada 2 minutos llegan piezas,\n y el servidor nunca se libera, asi");
+	printf("que el tiempo de demora en cola simepre va a ir aumentenado.. \n Pero igual no se..\n");
+	
+	sampst(0.0, -Demora_A_Lubricacion);
+	printf("\nDemora media en cola Lubricacion, pieza A      : %f min \n ", transfer[1]);
+
+	sampst(0.0, -Demora_B_Control_Hum);
+	printf("\nDemora media en cola Lubricacion, pieza A      : %f min \n ", transfer[1]);
+
+	printf("\n No me gustan los valores que me da.. Me parece raro que la espera del lado de A sea menor \n que la del de B ");
+	printf(" porque supuestamente del lado de B lo controla un humano y tarda mas.. :/ \n\n");
 	/*sampst(0.0, -Demora_Cola_Estacion_1);
 	printf("\nDemora media en cola estacion 1      : %f \n ", transfer[1]);
 	
