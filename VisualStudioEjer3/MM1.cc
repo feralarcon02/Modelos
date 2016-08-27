@@ -33,6 +33,7 @@
 #define Demora_Cola_Estacion_6         6
 
 #define Media_Procesador_limpieza      1
+#define Media_Procesamiento_Ensamblado 2
 
 
 /* Declaraci¢n de variables propias */
@@ -224,6 +225,7 @@ void Rutina_Fin_Lub_Calib_A(void) {
 		transfer[1] = sim_time + expon(media_timepo_ensamblado, Fin_Ensamblado);
 		transfer[2] = Fin_Ensamblado;
 		list_file(INCREASING, LIST_EVENT);
+		timest(1, Media_Procesamiento_Ensamblado);
 	}
 	if (list_size[Cola_Espera_Lub_A] > 0) {
 		list_remove(FIRST, Cola_Espera_Lub_A);
@@ -273,6 +275,7 @@ void Rutina_Fin_Control_Humano_B(void) {
 		transfer[1] = sim_time + expon(media_timepo_ensamblado, Fin_Ensamblado);
 		transfer[2] = Fin_Ensamblado;
 		list_file(INCREASING, LIST_EVENT);
+		timest(1, Media_Procesamiento_Ensamblado);
 	}
 
 	if (list_size[Cola_Espera_Control_Humano_B] > 0) {
@@ -287,6 +290,8 @@ void Rutina_Fin_Control_Humano_B(void) {
 
 void Rutina_Fin_Ensamblado(void) {
 
+	timest(0, Media_Procesamiento_Ensamblado);
+
 	if (lcgrand(1) <= 0.04) {
 		for (int i = 0; i <= 2; i++) {
 			transfer[1] = sim_time;
@@ -298,7 +303,6 @@ void Rutina_Fin_Ensamblado(void) {
 		list_remove(FIRST, Procesador_Ensamblado);
 	}
 	
-
 	if (list_size[Cola_Ensamblado_B] > 0) {
 		list_remove(FIRST, Cola_Ensamblado_B);
 		transfer[1] = Pieza_B;
@@ -314,6 +318,7 @@ void Rutina_Fin_Ensamblado(void) {
 		transfer[1] = sim_time + expon(media_timepo_ensamblado, Fin_Ensamblado);
 		transfer[2] = Fin_Ensamblado;
 		list_file(INCREASING, LIST_EVENT);
+		timest(1, Media_Procesamiento_Ensamblado);
 	}
 
 	
@@ -333,7 +338,11 @@ void reporte(void)
 																								/*Porque me dio paja cambiar todo, y tambien sirve*/
 	printf("\nUtilizacion del Procesador Lado B     : %f \n ", filest(Procesador_Control_Human_B));
 
-	printf("\nUtilizacion del Procesador Ensamblado     : %f \n ", filest(Procesador_Ensamblado));
+	printf("\nUtilizacion del Procesador Ensamblado  (Esta mal, a ver si se dan cuenta porquee..)   : %f \n ", filest(Procesador_Ensamblado));
+
+	timest(0.0, -Media_Procesamiento_Ensamblado);
+	printf("\nUtilizacion Procesador Ensamblado mas preciso     : %f \n ", transfer[1]);
+	
 	/*sampst(0.0, -Demora_Cola_Estacion_1);
 	printf("\nDemora media en cola estacion 1      : %f \n ", transfer[1]);
 	
