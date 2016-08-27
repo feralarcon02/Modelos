@@ -21,6 +21,7 @@
 #define Procesador_Lubic_A             7
 #define Procesador_Control_Human_B     8
 #define Procesador_Ensamblado          9
+#define Hola_Gian                      10
 
 #define Pieza_A                        1
 #define Pieza_B                        2
