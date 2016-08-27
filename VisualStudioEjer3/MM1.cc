@@ -166,7 +166,6 @@ void Rutina_Fin_Limpieza_Ref(void) {
 			transfer[1] = sim_time;
 			transfer[2] = Fin_Lub_Calib_A;
 			list_file(LAST, Cola_Espera_Lub_A);
-			list_file(FIRST, Procesador_Lubic_A);
 		}
 		else {
 			transfer[1] = sim_time + expon(media_lub_calib_A, Fin_Lub_Calib_A);
@@ -250,7 +249,10 @@ void Rutina_Fin_Lub_Calib_A(void) {
 		transfer[2] = Fin_Lub_Calib_A;
 		list_file(INCREASING, LIST_EVENT);
 	}
-	list_remove(FIRST, Procesador_Lubic_A);
+	else {
+		list_remove(FIRST, Procesador_Lubic_A);
+	}
+	
 }
 
 
