@@ -6,16 +6,21 @@
 #include <stdlib.h> 
 
 /*Eventos*/
-#define Arribo_Limpieza_Refinacion     1
+#define Inicio_Jornada_Laboral         1
+#define Fin_Jornada_Laboral            2
+#define Rotura_Maquina                 3
+#define Fin_Reparacion                 4
 
 /*Colas*/
-#define Cola_Espera_Limpieza_Ref       1  
+#define Cola_Espera_Arreglo            1  
 
 /*Servidores, continuar numeracion de las colas*/
-#define Procesador_Limpieza            6
+#define Tecnicos_Reparadores           6
+#define Reparador_Nocturno             7
+#define Tecnicos_Rep_Aux               8
 
 /*Demoras, otra numeracion distinta*/
-#define Demora_A_Limpieza              1
+#define Demora_Cola_Espera_Reparacion  1
 
 
 #define Media_Procesador_limpieza      1
@@ -24,26 +29,23 @@
 
 /* Declaraci¢n de variables propias */
 
-float ;
-int ;
-bool ;
+float demora_llegar_tecnico, media_rotura_maq, min_rep_rapida, max_rep_rapida, min_rep_lenta, max_rep_lenta;
+int jornada_laboral, numero_tecnico;
+bool trabajando, reparador_extra;
 
 
 /* Declaraci¢n de Funciones propias */
 
-void Rutina_Arribo_Limpieza_Ref(void);
-void Rutina_Fin_Limpieza_Ref(void);
-void Rutina_Fin_Lub_Calib_A(void);
-void Rutina_Fin_Control_Humano_B(void);
-void Rutina_Fin_Ensamblado(void);
+void Rutina_Inicio_Jornada_Laboral(void);
+void Rutina_Fin_Jornada_Laboral(void);
+void Rutina_Rotura_Maquina(void);
+void Rutina_Fin_Reparacion(void);
 void inicializa(void);
 void reporte(void);
 
 
 int main()  /* Main function. */
 {
-	/* Apertura de Archivos que sean necesarios */
-
 
 	/* Initializar Simlib */
 	init_simlib();
@@ -58,7 +60,7 @@ int main()  /* Main function. */
 	/* Ejecutar la simulaci¢n. */
 
 
-	while (sim_time <= 21600)
+	while (sim_time <= 48000)
 	{
 		/* Determinar pr¢ximo Evento */
  		timing();
@@ -68,20 +70,17 @@ int main()  /* Main function. */
 		switch (next_event_type)
 		{
 			
-		case Arribo_Limpieza_Refinacion:
-			Rutina_Arribo_Limpieza_Ref();
+		case Inicio_Jornada_Laboral:
+			Rutina_Inicio_Jornada_Laboral();
 			break;
-		case Finaliza_Limpieza_Refinacion:
-			Rutina_Fin_Limpieza_Ref();
+		case Fin_Jornada_Laboral:
+			Rutina_Fin_Jornada_Laboral();
 			break;
-		case Fin_Lub_Calib_A:
-			Rutina_Fin_Lub_Calib_A();
+		case Rotura_Maquina:
+			Rutina_Rotura_Maquina();
 			break;
-		case Fin_Control_Humano_B:
- 			Rutina_Fin_Control_Humano_B();
-			break;
-		case Fin_Ensamblado:
-			Rutina_Fin_Ensamblado();
+		case Fin_Reparacion:
+ 			Rutina_Fin_Reparacion();
 			break;
 		}
 	}
@@ -96,36 +95,142 @@ int main()  /* Main function. */
 void inicializa(void)  /* Inicializar el Sistema */
 {
 	/* Se carga el primer Arribo en la Lista de Eventos */
-	
+  
+	media_rotura_maq = 480;
+	min_rep_rapida = 20;
+	max_rep_rapida = 40;
+	min_rep_lenta = 90;
+	max_rep_rapida = 150;
+	demora_llegar_tecnico = 30;
+	jornada_laboral = 720;
+	trabajando = false;
 
+	for (int i = 0; i < 6; i++) {
+		transfer[1] = sim_time + expon(media_rotura_maq, Rotura_Maquina);
+		transfer[2] = Rotura_Maquina;
+		list_file(INCREASING, LIST_EVENT);
+	}
+	
+	transfer[1] = sim_time + jornada_laboral;
+	transfer[2] = Fin_Jornada_Laboral;
+	trabajando = true;
+	list_file(INCREASING, LIST_EVENT);
 }
 
-void Rutina_Arribo_Limpieza_Ref(void)
+void Rutina_Inicio_Jornada_Laboral(void)
 {
-	
-	
+	transfer[1] = sim_time + jornada_laboral;
+	transfer[2] = Fin_Jornada_Laboral;
+	trabajando = false;
+	list_file(INCREASING, LIST_EVENT);
 }
 
-void Rutina_Fin_Limpieza_Ref(void) {
+void Rutina_Fin_Jornada_Laboral(void) {
 
-
+	transfer[1] = sim_time + jornada_laboral;
+	transfer[2] = Inicio_Jornada_Laboral;
+	trabajando = false;
+	list_file(INCREASING, LIST_EVENT);
 }
 
-void Rutina_Fin_Lub_Calib_A(void) {
+void Rutina_Rotura_Maquina(void) {
 
+	if (trabajando == true) { /*estan en horario de trabajo*/
+		if ((list_size[Tecnicos_Reparadores] < 3) | (((list_size[Tecnicos_Reparadores] == 3) & (reparador_extra == false)) & (list_size[Cola_Espera_Arreglo] == 0))) {
+			if (lcgrand(1) <= 0.3) {  /*Reparaicon rapida o lenta*/
+				transfer[1] = sim_time + uniform(min_rep_rapida, max_rep_rapida, Fin_Reparacion);
+			}
+			else {
+				transfer[1] = sim_time + uniform(min_rep_lenta, max_rep_lenta, Fin_Reparacion);
+			}
+			transfer[2] = Fin_Reparacion;
+			transfer[3] = list_size[Tecnicos_Reparadores] + 1;
+			list_file(INCREASING, LIST_EVENT);
+			if (reparador_extra == false & list_size[Tecnicos_Reparadores] == 3) {
+				reparador_extra = true;
+			}
+			transfer[1] = sim_time; /*Ocupo un reparador mas*/
+			transfer[2] = Fin_Reparacion;
+			transfer[3] = list_size[Tecnicos_Reparadores] + 1;
+			list_file(LAST, Tecnicos_Reparadores);
+			sampst(0, Demora_Cola_Espera_Reparacion);
+		}
+		else {
+			transfer[1] = sim_time;
+			list_file(LAST, Cola_Espera_Arreglo);
+		}
+	} /*No estan en horario de trabajo*/
+	else {
+		if (list_size[Reparador_Nocturno] < 1) {
+			if (lcgrand(1) <= 0.3) {  /*Reparaicon rapida o lenta*/
+				transfer[1] = sim_time + demora_llegar_tecnico + uniform(min_rep_rapida, max_rep_rapida, Fin_Reparacion);
+			}
+			else {
+				transfer[1] = sim_time + demora_llegar_tecnico + uniform(min_rep_lenta, max_rep_lenta, Fin_Reparacion);
+			}
+			transfer[2] = Fin_Reparacion;
+			transfer[3] = 4; /*Reparador nocturno, ver que hacer cuando finaliza..*/
+			list_file(INCREASING, LIST_EVENT);
+			transfer[1] = sim_time; /*Ocupo un reparador mas*/
+			transfer[2] = Fin_Reparacion;
+			list_file(LAST, Reparador_Nocturno);
+		}
+		else {
+			transfer[1] = sim_time;
+			list_file(LAST, Cola_Espera_Arreglo);
+		}
+	}
+}
+
+
+void Rutina_Fin_Reparacion(void) {
+
+	numero_tecnico = transfer[3];
 	
+	while (list_size[Tecnicos_Reparadores] > 0) {
+		list_remove(FIRST, Tecnicos_Reparadores);
+		if (numero_tecnico != transfer[3]) {
+			list_file(FIRST, Tecnicos_Rep_Aux);
+		}
+	}
+	while (list_size[Tecnicos_Rep_Aux] > 0){
+		list_remove(FIRST, Tecnicos_Rep_Aux);
+		list_file(FIRST, Tecnicos_Reparadores);
+	}
+	if (reparador_extra == true) {
+		reparador_extra = false;
+	}
+	else {
+		if (list_size[Cola_Espera_Arreglo] > 0) {
+			list_remove(FIRST, Cola_Espera_Arreglo);
+			float r = sim_time - transfer[1];
+			sampst(sim_time - transfer[1], Demora_Cola_Espera_Reparacion);
+			if (lcgrand(1) <= 0.3) {  /*Reparaicon rapida o lenta*/
+				transfer[1] = sim_time + uniform(min_rep_rapida, max_rep_rapida, Fin_Reparacion);
+			}
+			else {
+				transfer[1] = sim_time + uniform(min_rep_lenta, max_rep_lenta, Fin_Reparacion);
+			}
+			transfer[2] = Fin_Reparacion;
+			transfer[3] = numero_tecnico;
+			list_file(INCREASING, LIST_EVENT);
+			transfer[1] = sim_time; /*Ocupo un reparador mas*/
+			transfer[2] = Fin_Reparacion;
+			transfer[3] = numero_tecnico;
+			if (trabajando == true) {
+				list_file(LAST, Tecnicos_Reparadores);
+			}
+			else {
+				list_file(FIRST, Reparador_Nocturno);
+			}
+		}
+	}
+	transfer[1] = sim_time + expon(media_rotura_maq, Rotura_Maquina);
+	transfer[2] = Rotura_Maquina;
+	list_file(INCREASING, LIST_EVENT);
 }
 
 
-void Rutina_Fin_Control_Humano_B(void) {
-	
-	
-}
-
-void Rutina_Fin_Ensamblado(void) {
-
-
-}
 
 void reporte(void)  
 {
@@ -133,24 +238,30 @@ void reporte(void)
 
 	printf("\nCantidad de pedidos de servidores    : %i \n ", cantidad_pedidos_servidores);*/
 
-	/*filest(Procesador_Limpieza);*/
+	/*filest(Procesador_Limpieza);
 	timest(0.0, -Media_Procesador_limpieza);
 	printf("\nUtilizacion del Procesador Limpieza      : %f \n ", transfer[1]);
 
 	float x = transfer[1];
 
-	printf("\nUtilizacion del Procesador Lado A      : %f \n ", filest(Procesador_Lubic_A));   /*A estos 3 que siguen los hice de esta forma*/
-																								/*Porque me dio paja cambiar todo, y tambien sirve*/
+	printf("\nUtilizacion del Procesador Lado A      : %f \n ", filest(Procesador_Lubic_A));   
 	printf("\nUtilizacion del Procesador Lado B     : %f \n ", filest(Procesador_Control_Human_B));
 
 	printf("\nUtilizacion del Procesador Ensamblado  (Esta mal, a ver si se dan cuenta porquee..)   : %f \n ", filest(Procesador_Ensamblado));
 
 	timest(0.0, -Media_Procesamiento_Ensamblado);
-	printf("\nUtilizacion Procesador Ensamblado mas preciso     : %f \n ", transfer[1]);
+	printf("\nUtilizacion Procesador Ensamblado mas preciso     : %f \n ", transfer[1]);*/
 	
-	sampst(0.0, -Demora_A_Limpieza);
-	printf("\nDemora media en cola limpieza, pieza A     : %f Horas \n ", transfer[1]/60);
+	sampst(0.0, -Demora_Cola_Espera_Reparacion);
+	printf("\nDemora media en cola Espera reparacion    : %f minutos \n ", transfer[1]);
 
+	sampst(0.0, -Demora_Cola_Espera_Reparacion);
+	printf("\nDemora minima en con=la Espera reparacion     : %f minutos \n ", transfer[4]);
+
+	sampst(0.0, -Demora_Cola_Espera_Reparacion);
+	printf("\nDemora maxima en cola Espera reparacion     : %f minutos \n ", transfer[3]);
+
+	/*
 	sampst(0.0, -Demora_B_Limpieza);
 	printf("\nDemora media en cola limpieza, pieza B      : %f Horas\n ", transfer[1]/60);
 
@@ -169,7 +280,7 @@ void reporte(void)
 	/*sampst(0.0, -Demora_Procesamiento_General);
 	printf("\nTiempo medio permanencia de una pieza en el sistema      : %f hs \n ", transfer[1]/60);*/
 
-	/*printf("\nTiempo medio permanencia de una pieza en el sistema      : %f \n ", 21600/Total_piezas_atendidas);*/
+	/*printf("\nTiempo medio permanencia de una pieza en el sistema      : %f \n ", 21600/Total_piezas_atendidas);
 
 	printf("\nCantidad de piezas B rechazadas      :  %i  \n", B_Rechazadas);
 	
