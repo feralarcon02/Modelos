@@ -121,10 +121,43 @@ void inicializa(void)  /* Inicializar el Sistema */
 
 void Rutina_Inicio_Jornada_Laboral(void)
 {
+
 	transfer[1] = sim_time + jornada_laboral;
 	transfer[2] = Fin_Jornada_Laboral;
 	trabajando = false;
+
 	list_file(INCREASING, LIST_EVENT);
+	if (list_size[Cola_Espera_Arreglo] > 0) {
+		list_remove(FIRST, Cola_Espera_Arreglo);
+
+		numero_tecnico = transfer[3];
+		float horas_reparacion = (sim_time - transfer[1]) / 60;
+		costo_total_sistema = costo_total_sistema + (horas_reparacion * 120);
+
+		float r = sim_time - transfer[1];
+		sampst(sim_time - transfer[1], Demora_Cola_Espera_Reparacion);
+		costo_total_sistema = costo_total_sistema + (((sim_time - transfer[1]) / 60) * 120);
+		if (lcgrand(1) <= 0.3) {  /*Reparaicon rapida o lenta*/
+			transfer[1] = sim_time + uniform(min_rep_rapida, max_rep_rapida, Fin_Reparacion);
+		}
+		else {
+			transfer[1] = sim_time + uniform(min_rep_lenta, max_rep_lenta, Fin_Reparacion);
+		}
+		transfer[2] = Fin_Reparacion;
+		transfer[3] = numero_tecnico;
+		list_file(INCREASING, LIST_EVENT);
+		transfer[1] = sim_time; /*Ocupo un reparador mas*/
+		transfer[2] = Fin_Reparacion;
+		transfer[3] = numero_tecnico;
+		if (trabajando == true) {
+			list_file(LAST, Tecnicos_Reparadores);
+			costo_total_sistema = costo_total_sistema + (horas_reparacion * 40);
+		}
+		else {
+			list_file(FIRST, Reparador_Nocturno);
+			costo_total_sistema = costo_total_sistema + (horas_reparacion * 90);
+		}
+	}
 }
 
 void Rutina_Fin_Jornada_Laboral(void) {
