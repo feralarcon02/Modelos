@@ -222,7 +222,7 @@ void Rutina_Vaciar_Montacargas(void) {
 		list_remove(FIRST, Montacargas);
 	}
 
-	transfer[1] = sim_time + tiempo_siguiente_carga;
+	transfer[1] = sim_time + 0.5;
 	transfer[2] = Cargar_Montacargas;
 	transfer[3] = Cola_Piezas_1;
 	list_file(INCREASING, LIST_EVENT);
@@ -249,9 +249,8 @@ void reporte(void)
 	printf("\nDemora media en cola Piezas 4    : %f minutos\n ", transfer[1]);
 	printf("\nDemora maxima en cola Piezas 4    : %f minutos\n ", transfer[3]);
 
-	/*
-	printf("\nNumero medio cola 1            : %f \n ", filest(Cola_Piezas_1));
-	
+	filest(Cola_Piezas_1);
+	printf("\nNumero medio cola 1            : %f \n ", transfer[1]);
 	filest(Cola_Piezas_2);
 	printf("\nNumero medio cola 2           : %f \n ", transfer[1]);
 	filest(Cola_Piezas_3);
