@@ -273,6 +273,7 @@ void Rutina_Fin_Lub_Calib_A(void) {
 
 void Rutina_Fin_Control_Humano_B(void) {
 	
+	list_remove(FIRST, Procesador_Control_Human_B);
 	if (lcgrand(1) > 0.05) {
 		if (list_size[Procesador_Ensamblado] > 0) {  /*Siempre pongo LAST el B y FIRST el A*/
 			list_remove(LAST, Procesador_Ensamblado);
@@ -321,7 +322,7 @@ void Rutina_Fin_Control_Humano_B(void) {
 		list_file(INCREASING, LIST_EVENT);
 		list_file(FIRST, Procesador_Control_Human_B);
 	}
-	list_remove(FIRST, Procesador_Control_Human_B);
+	
 }
 
 void Rutina_Fin_Ensamblado(void) {
