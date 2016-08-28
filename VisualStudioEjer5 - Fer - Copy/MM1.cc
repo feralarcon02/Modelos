@@ -6,13 +6,15 @@
 #include <stdlib.h> 
 
 /*Eventos*/
-#define Inicio_Jornada_Laboral         1
-#define Fin_Jornada_Laboral            2
-#define Rotura_Maquina                 3
-#define Fin_Reparacion                 4
+#define Fin_Generacion_Pieza           1
+#define Cargar_piezas                  2
+#define Vaciar_Montagargas             3
 
 /*Colas*/
-#define Cola_Espera_Arreglo            1  
+#define Cola_Piezas_1                  1  
+#define Cola_Piezas_2                  2 
+#define Cola_Piezas_3                  3 
+#define Cola_Piezas_4                  4 
 
 /*Servidores, continuar numeracion de las colas*/
 #define Tecnicos_Reparadores           6
