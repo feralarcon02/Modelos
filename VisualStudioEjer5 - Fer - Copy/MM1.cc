@@ -7,8 +7,8 @@
 
 /*Eventos*/
 #define Fin_Generacion_Pieza           1
-#define Cargar_piezas                  2
-#define Vaciar_Montagargas             3
+#define Cargar_Montacargas             2
+#define Vaciar_Montacargas             3
 
 /*Colas*/
 #define Cola_Piezas_1                  1  
@@ -17,13 +17,14 @@
 #define Cola_Piezas_4                  4 
 
 /*Servidores, continuar numeracion de las colas*/
-#define Tecnicos_Reparadores           6
-#define Reparador_Nocturno             7
-#define Tecnicos_Rep_Aux               8
+#define Montacargas                    5
 
 /*Demoras, otra numeracion distinta*/
-#define Demora_Cola_Espera_Reparacion  1
-#define Uso_Tecnico_1                  2
+#define Demora_Cola_1                  1
+#define Demora_Cola_2                  2
+#define Demora_Cola_3                  3
+#define Demora_Cola_4                  4
+#define Uso_Tecnico_1                  5
 
 
 #define Media_Procesador_limpieza      1
@@ -32,17 +33,16 @@
 
 /* Declaraci¢n de variables propias */
 
-float costo_total_sistema, demora_llegar_tecnico, media_rotura_maq, min_rep_rapida, max_rep_rapida, min_rep_lenta, max_rep_lenta;
-int jornada_laboral, numero_tecnico;
+float tiempo_proxima_parada;
+int tiempo_siguiente_carga, timepo_piezas_menor, tiempo_piezas_mayor;
 bool trabajando, reparador_extra;
 
 
 /* Declaraci¢n de Funciones propias */
 
-void Rutina_Inicio_Jornada_Laboral(void);
-void Rutina_Fin_Jornada_Laboral(void);
-void Rutina_Rotura_Maquina(void);
-void Rutina_Fin_Reparacion(void);
+void Rutina_Fin_Generacion_Pieza(void);
+void Rutina_Cargar_Montacargas(void);
+void Rutina_Vaciar_Montacargas(void);
 void inicializa(void);
 void reporte(void);
 
@@ -63,7 +63,7 @@ int main()  /* Main function. */
 	/* Ejecutar la simulaci¢n. */
 
 
-	while (sim_time <= 48000)
+	while (sim_time <= 7200)
 	{
 		/* Determinar pr¢ximo Evento */
  		timing();
@@ -73,17 +73,14 @@ int main()  /* Main function. */
 		switch (next_event_type)
 		{
 			
-		case Inicio_Jornada_Laboral:
-			Rutina_Inicio_Jornada_Laboral();
+		case Fin_Generacion_Pieza:
+			Rutina_Fin_Generacion_Pieza();
 			break;
-		case Fin_Jornada_Laboral:
-			Rutina_Fin_Jornada_Laboral();
+		case Cargar_Montacargas:
+			Rutina_Cargar_Montacargas();
 			break;
-		case Rotura_Maquina:
-			Rutina_Rotura_Maquina();
-			break;
-		case Fin_Reparacion:
- 			Rutina_Fin_Reparacion();
+		case Vaciar_Montacargas:
+			Rutina_Vaciar_Montacargas();
 			break;
 		}
 	}
@@ -98,192 +95,146 @@ int main()  /* Main function. */
 void inicializa(void)  /* Inicializar el Sistema */
 {
 	/* Se carga el primer Arribo en la Lista de Eventos */
-  
-	media_rotura_maq = 480;
-	min_rep_rapida = 20;
-	max_rep_rapida = 40;
-	min_rep_lenta = 90;
-	max_rep_lenta = 150;
-	demora_llegar_tecnico = 30;
-	jornada_laboral = 720;
-	trabajando = false;
-	costo_total_sistema = 0;
+	tiempo_siguiente_carga = 30;
+	timepo_piezas_menor = 5;
+	tiempo_piezas_mayor = 3;
+	tiempo_proxima_parada = 0.5;
 
-	for (int i = 0; i < 6; i++) {
-		transfer[1] = sim_time + expon(media_rotura_maq, Rotura_Maquina);
-		transfer[2] = Rotura_Maquina;
+	transfer[1] = sim_time + tiempo_siguiente_carga;
+	transfer[2] = Cargar_Montacargas;
+	transfer[3] = Cola_Piezas_1;
+	list_file(INCREASING, LIST_EVENT);
+
+	for (int i = 1; i <= 4; i++) {
+		if (i <= 2) {
+			transfer[1] = sim_time + expon(timepo_piezas_menor, Fin_Generacion_Pieza);
+			transfer[3] = i;
+		}
+		else {
+			transfer[1] = sim_time + expon(tiempo_piezas_mayor, Fin_Generacion_Pieza);
+			transfer[3] = i;
+		}
+		transfer[2] = Fin_Generacion_Pieza;
 		list_file(INCREASING, LIST_EVENT);
 	}
-	
-	transfer[1] = sim_time + jornada_laboral;
-	transfer[2] = Fin_Jornada_Laboral;
-	trabajando = true;
-	list_file(INCREASING, LIST_EVENT);
 }
 
-void Rutina_Inicio_Jornada_Laboral(void)
+void Rutina_Fin_Generacion_Pieza(void)
 {
-	transfer[1] = sim_time + jornada_laboral;
-	transfer[2] = Fin_Jornada_Laboral;
-	trabajando = false;
-	list_file(INCREASING, LIST_EVENT);
-}
-
-void Rutina_Fin_Jornada_Laboral(void) {
-
-	transfer[1] = sim_time + jornada_laboral;
-	transfer[2] = Inicio_Jornada_Laboral;
-	trabajando = false;
-	list_file(INCREASING, LIST_EVENT);
-}
-
-void Rutina_Rotura_Maquina(void) {
-
-	if (trabajando == true) { /*estan en horario de trabajo*/
-		if ((list_size[Tecnicos_Reparadores] < 3) | (((list_size[Tecnicos_Reparadores] == 3) & (reparador_extra == false)) & (list_size[Cola_Espera_Arreglo] == 0))) {
-			if (lcgrand(1) <= 0.3) {  /*Reparaicon rapida o lenta*/
-				transfer[1] = sim_time + uniform(min_rep_rapida, max_rep_rapida, Fin_Reparacion);
-			}
-			else {
-				transfer[1] = sim_time + uniform(min_rep_lenta, max_rep_lenta, Fin_Reparacion);
-			}
-			transfer[2] = Fin_Reparacion;
-			transfer[3] = list_size[Tecnicos_Reparadores] + 1;
-			list_file(INCREASING, LIST_EVENT);
-			if (reparador_extra == false & list_size[Tecnicos_Reparadores] == 3) {
-				reparador_extra = true;
-			}
-			transfer[1] = sim_time; /*Ocupo un reparador mas*/
-			transfer[2] = Fin_Reparacion;
-			transfer[3] = list_size[Tecnicos_Reparadores] + 1;
-			list_file(LAST, Tecnicos_Reparadores);
-			sampst(0, Demora_Cola_Espera_Reparacion);
-		}
-		else {
-			transfer[1] = sim_time;
-			list_file(LAST, Cola_Espera_Arreglo);
-		}
-	} /*No estan en horario de trabajo*/
-	else {
-		if (list_size[Reparador_Nocturno] < 1) {
-			if (lcgrand(1) <= 0.3) {  /*Reparaicon rapida o lenta*/
-				transfer[1] = sim_time + demora_llegar_tecnico + uniform(min_rep_rapida, max_rep_rapida, Fin_Reparacion);
-			}
-			else {
-				transfer[1] = sim_time + demora_llegar_tecnico + uniform(min_rep_lenta, max_rep_lenta, Fin_Reparacion);
-			}
-			transfer[2] = Fin_Reparacion;
-			transfer[3] = 4; /*Reparador nocturno, ver que hacer cuando finaliza..*/
-			list_file(INCREASING, LIST_EVENT);
-			transfer[1] = sim_time; /*Ocupo un reparador mas*/
-			transfer[2] = Fin_Reparacion;
-			list_file(LAST, Reparador_Nocturno);
-		}
-		else {
-			transfer[1] = sim_time;
-			list_file(LAST, Cola_Espera_Arreglo);
-		}
+	int x = transfer[3];
+	transfer[1] = sim_time;
+	switch (x)
+	{
+		case 1:
+			list_file(LAST, Cola_Piezas_1);
+			break;
+		case 2:
+			list_file(LAST, Cola_Piezas_2);
+			break;
+		case 3:
+			list_file(LAST, Cola_Piezas_3);
+			break;
+		case 4:
+			list_file(LAST, Cola_Piezas_4);
+			break;
 	}
-}
 
-
-void Rutina_Fin_Reparacion(void) {
-
-	numero_tecnico = transfer[3];
-	float horas_reparacion = (sim_time - transfer[1])/60;
-	costo_total_sistema = costo_total_sistema + (horas_reparacion * 120);
-
-	while (list_size[Tecnicos_Reparadores] > 0) {
-		list_remove(FIRST, Tecnicos_Reparadores);
-		if (numero_tecnico != transfer[3]) {
-			list_file(FIRST, Tecnicos_Rep_Aux);
-		}
-		else {
-			if (numero_tecnico == 1) {
-				sampst(sim_time - transfer[1], Uso_Tecnico_1);
-			}
-		}
-	}
-	while (list_size[Tecnicos_Rep_Aux] > 0){
-		list_remove(FIRST, Tecnicos_Rep_Aux);
-		list_file(FIRST, Tecnicos_Reparadores);
-	}
-	if (reparador_extra == true) {
-		reparador_extra = false;
+	if (x <= 2) {
+		transfer[1] = sim_time + expon(timepo_piezas_menor, Fin_Generacion_Pieza);
 	}
 	else {
-		if (list_size[Cola_Espera_Arreglo] > 0) {
-			list_remove(FIRST, Cola_Espera_Arreglo);
-			float r = sim_time - transfer[1];
-			sampst(sim_time - transfer[1], Demora_Cola_Espera_Reparacion);
-			costo_total_sistema = costo_total_sistema + (((sim_time-transfer[1])/60) * 120);
-			if (lcgrand(1) <= 0.3) {  /*Reparaicon rapida o lenta*/
-				transfer[1] = sim_time + uniform(min_rep_rapida, max_rep_rapida, Fin_Reparacion);
-			}
-			else {
-				transfer[1] = sim_time + uniform(min_rep_lenta, max_rep_lenta, Fin_Reparacion);
-			}
-			transfer[2] = Fin_Reparacion;
-			transfer[3] = numero_tecnico;
-			list_file(INCREASING, LIST_EVENT);
-			transfer[1] = sim_time; /*Ocupo un reparador mas*/
-			transfer[2] = Fin_Reparacion;
-			transfer[3] = numero_tecnico;
-			if (trabajando == true) {
-				list_file(LAST, Tecnicos_Reparadores);
-				costo_total_sistema = costo_total_sistema + (horas_reparacion * 40);
-			}
-			else {
-				list_file(FIRST, Reparador_Nocturno);
-				costo_total_sistema = costo_total_sistema + (horas_reparacion * 90);
-			}
-		}
+		transfer[1] = sim_time + expon(tiempo_piezas_mayor, Fin_Generacion_Pieza);
 	}
-	transfer[1] = sim_time + expon(media_rotura_maq, Rotura_Maquina);
-	transfer[2] = Rotura_Maquina;
+	transfer[2] = Fin_Generacion_Pieza;
+	transfer[3] = x;
 	list_file(INCREASING, LIST_EVENT);
+
 }
 
+void Rutina_Cargar_Montacargas(void) {
+
+	int x = transfer[3];
+	switch (x)
+	{
+	case 1:
+		while (list_size[Cola_Piezas_1] > 0) {
+			list_remove(FIRST, Cola_Piezas_1);
+			list_file(FIRST, Montacargas);
+		}
+		break;
+	case 2:
+		while (list_size[Cola_Piezas_2] > 0) {
+			if (list_size[Montacargas] <= 4) {
+				list_remove(FIRST, Cola_Piezas_2);
+				list_file(FIRST, Montacargas);
+				list_file(FIRST, Montacargas);
+			}
+		}
+		break;
+	case 3:
+		while (list_size[Cola_Piezas_3] > 0) {
+			if (list_size[Montacargas] <= 3) {
+				list_remove(FIRST, Cola_Piezas_3);
+				list_file(FIRST, Montacargas);
+				list_file(FIRST, Montacargas);
+				list_file(FIRST, Montacargas);
+			}
+		}
+		break;
+	case 4:
+		while (list_size[Cola_Piezas_4] > 0) {
+			if (list_size[Montacargas] <= 3) {
+				list_remove(FIRST, Cola_Piezas_4);
+				list_file(FIRST, Montacargas);
+				list_file(FIRST, Montacargas);
+				list_file(FIRST, Montacargas);
+			}
+		}
+		break;
+	}
+
+	/*Me fijo cual es la proxima parada.*/
+
+	if (x == 4) {
+		if (list_size[Montacargas] > 3) {
+			transfer[1] = sim_time + 5;
+			transfer[2] = Vaciar_Montacargas;
+			transfer[3] = 0;
+			list_file(INCREASING, LIST_EVENT);
+		}
+		else
+		{
+			transfer[1] = sim_time + tiempo_proxima_parada;
+			transfer[2] = Cargar_Montacargas;
+			transfer[3] = 1;
+			list_file(INCREASING, LIST_EVENT);
+		}
+	}
+	else {
+		transfer[1] = sim_time + tiempo_proxima_parada;
+		transfer[2] = Cargar_Montacargas;
+		transfer[3] = x + 1;
+		list_file(INCREASING, LIST_EVENT);
+	}
+}
+
+void Rutina_Vaciar_Montacargas(void) {
+
+	while (list_size[Montacargas] > 0) {
+		list_remove(FIRST, Montacargas);
+	}
+
+	transfer[1] = sim_time + tiempo_siguiente_carga;
+	transfer[2] = Cargar_Montacargas;
+	transfer[3] = Cola_Piezas_1;
+	list_file(INCREASING, LIST_EVENT);
+	
+}
 
 
 void reporte(void)  
 {
-	/*printf("\nCantidad de pedidos de estaciones    : %i \n ", cantidad_pedidos_estaciones);
-
-	printf("\nCantidad de pedidos de servidores    : %i \n ", cantidad_pedidos_servidores);*/
-
-	/*filest(Procesador_Limpieza);
-	timest(0.0, -Media_Procesador_limpieza);
-	printf("\nUtilizacion del Procesador Limpieza      : %f \n ", transfer[1]);
-
-	float x = transfer[1];
-
-	printf("\nUtilizacion del Procesador Lado A      : %f \n ", filest(Procesador_Lubic_A));   
-	printf("\nUtilizacion del Procesador Lado B     : %f \n ", filest(Procesador_Control_Human_B));
-
-	printf("\nUtilizacion del Procesador Ensamblado  (Esta mal, a ver si se dan cuenta porquee..)   : %f \n ", filest(Procesador_Ensamblado));
-
-	timest(0.0, -Media_Procesamiento_Ensamblado);
-	printf("\nUtilizacion Procesador Ensamblado mas preciso     : %f \n ", transfer[1]);*/
 	
-	sampst(0.0, -Uso_Tecnico_1);
-	printf("\nMedia timepo trabajo tecnico 1    : %f hs \n ", transfer[1]/60);
-	printf("\nMaximo timepo trabajo tecnico 1    : %f hs \n ", transfer[3]/60);
-
-	sampst(0.0, -Demora_Cola_Espera_Reparacion);
-	printf("\nDemora media en cola Espera reparacion    : %f hs \n ", transfer[1]/60);
-
-	sampst(0.0, -Demora_Cola_Espera_Reparacion);
-	printf("\nDemora minima en con=la Espera reparacion     : %f hs \n ", transfer[4]/60);
-
-	sampst(0.0, -Demora_Cola_Espera_Reparacion);
-	printf("\nDemora maxima en cola Espera reparacion     : %f hs \n ", transfer[3]/60);
-
-	filest(Cola_Espera_Arreglo);
-	printf("\nNumero medio de maquinas en la cola de espera     : %f  \n ", transfer[1]);
-
-
-	printf("\nCosto total del sistema de reparacion    : %f $ \n ", costo_total_sistema);
 	/*
 	sampst(0.0, -Demora_B_Limpieza);
 	printf("\nDemora media en cola limpieza, pieza B      : %f Horas\n ", transfer[1]/60);
