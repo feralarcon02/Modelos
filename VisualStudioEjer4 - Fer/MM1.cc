@@ -21,6 +21,7 @@
 
 /*Demoras, otra numeracion distinta*/
 #define Demora_Cola_Espera_Reparacion  1
+#define Uso_Tecnico_1                  2
 
 
 #define Media_Procesador_limpieza      1
@@ -29,7 +30,7 @@
 
 /* Declaraci¢n de variables propias */
 
-float demora_llegar_tecnico, media_rotura_maq, min_rep_rapida, max_rep_rapida, min_rep_lenta, max_rep_lenta;
+float costo_total_sistema, demora_llegar_tecnico, media_rotura_maq, min_rep_rapida, max_rep_rapida, min_rep_lenta, max_rep_lenta;
 int jornada_laboral, numero_tecnico;
 bool trabajando, reparador_extra;
 
@@ -100,10 +101,11 @@ void inicializa(void)  /* Inicializar el Sistema */
 	min_rep_rapida = 20;
 	max_rep_rapida = 40;
 	min_rep_lenta = 90;
-	max_rep_rapida = 150;
+	max_rep_lenta = 150;
 	demora_llegar_tecnico = 30;
 	jornada_laboral = 720;
 	trabajando = false;
+	costo_total_sistema = 0;
 
 	for (int i = 0; i < 6; i++) {
 		transfer[1] = sim_time + expon(media_rotura_maq, Rotura_Maquina);
@@ -186,11 +188,18 @@ void Rutina_Rotura_Maquina(void) {
 void Rutina_Fin_Reparacion(void) {
 
 	numero_tecnico = transfer[3];
-	
+	float horas_reparacion = (sim_time - transfer[1])/60;
+	costo_total_sistema = costo_total_sistema + (horas_reparacion * 120);
+
 	while (list_size[Tecnicos_Reparadores] > 0) {
 		list_remove(FIRST, Tecnicos_Reparadores);
 		if (numero_tecnico != transfer[3]) {
 			list_file(FIRST, Tecnicos_Rep_Aux);
+		}
+		else {
+			if (numero_tecnico == 1) {
+				sampst(sim_time - transfer[1], Uso_Tecnico_1);
+			}
 		}
 	}
 	while (list_size[Tecnicos_Rep_Aux] > 0){
@@ -205,6 +214,7 @@ void Rutina_Fin_Reparacion(void) {
 			list_remove(FIRST, Cola_Espera_Arreglo);
 			float r = sim_time - transfer[1];
 			sampst(sim_time - transfer[1], Demora_Cola_Espera_Reparacion);
+			costo_total_sistema = costo_total_sistema + (((sim_time-transfer[1])/60) * 120);
 			if (lcgrand(1) <= 0.3) {  /*Reparaicon rapida o lenta*/
 				transfer[1] = sim_time + uniform(min_rep_rapida, max_rep_rapida, Fin_Reparacion);
 			}
@@ -219,9 +229,11 @@ void Rutina_Fin_Reparacion(void) {
 			transfer[3] = numero_tecnico;
 			if (trabajando == true) {
 				list_file(LAST, Tecnicos_Reparadores);
+				costo_total_sistema = costo_total_sistema + (horas_reparacion * 40);
 			}
 			else {
 				list_file(FIRST, Reparador_Nocturno);
+				costo_total_sistema = costo_total_sistema + (horas_reparacion * 90);
 			}
 		}
 	}
@@ -252,15 +264,24 @@ void reporte(void)
 	timest(0.0, -Media_Procesamiento_Ensamblado);
 	printf("\nUtilizacion Procesador Ensamblado mas preciso     : %f \n ", transfer[1]);*/
 	
-	sampst(0.0, -Demora_Cola_Espera_Reparacion);
-	printf("\nDemora media en cola Espera reparacion    : %f minutos \n ", transfer[1]);
+	sampst(0.0, -Uso_Tecnico_1);
+	printf("\nMedia timepo trabajo tecnico 1    : %f hs \n ", transfer[1]/60);
+	printf("\nMaximo timepo trabajo tecnico 1    : %f hs \n ", transfer[3]/60);
 
 	sampst(0.0, -Demora_Cola_Espera_Reparacion);
-	printf("\nDemora minima en con=la Espera reparacion     : %f minutos \n ", transfer[4]);
+	printf("\nDemora media en cola Espera reparacion    : %f hs \n ", transfer[1]/60);
 
 	sampst(0.0, -Demora_Cola_Espera_Reparacion);
-	printf("\nDemora maxima en cola Espera reparacion     : %f minutos \n ", transfer[3]);
+	printf("\nDemora minima en con=la Espera reparacion     : %f hs \n ", transfer[4]/60);
 
+	sampst(0.0, -Demora_Cola_Espera_Reparacion);
+	printf("\nDemora maxima en cola Espera reparacion     : %f hs \n ", transfer[3]/60);
+
+	filest(Cola_Espera_Arreglo);
+	printf("\nNumero medio de maquinas en la cola de espera     : %f  \n ", transfer[1]);
+
+
+	printf("\nCosto total del sistema de reparacion    : %f $ \n ", costo_total_sistema);
 	/*
 	sampst(0.0, -Demora_B_Limpieza);
 	printf("\nDemora media en cola limpieza, pieza B      : %f Horas\n ", transfer[1]/60);
