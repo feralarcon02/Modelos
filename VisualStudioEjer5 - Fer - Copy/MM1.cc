@@ -157,38 +157,32 @@ void Rutina_Cargar_Montacargas(void) {
 	switch (x)
 	{
 	case 1:
-		while (list_size[Cola_Piezas_1] > 0) {
+		while ((list_size[Cola_Piezas_1] > 0) & (list_size[Montacargas] < 6)) {
 			list_remove(FIRST, Cola_Piezas_1);
 			list_file(FIRST, Montacargas);
 		}
 		break;
 	case 2:
-		while (list_size[Cola_Piezas_2] > 0) {
-			if (list_size[Montacargas] <= 4) {
-				list_remove(FIRST, Cola_Piezas_2);
-				list_file(FIRST, Montacargas);
-				list_file(FIRST, Montacargas);
-			}
+		while ((list_size[Cola_Piezas_2] > 0) & (list_size[Montacargas] <= 4)) {
+			list_remove(FIRST, Cola_Piezas_2);
+			list_file(FIRST, Montacargas);
+			list_file(FIRST, Montacargas);
 		}
 		break;
 	case 3:
-		while (list_size[Cola_Piezas_3] > 0) {
-			if (list_size[Montacargas] <= 3) {
-				list_remove(FIRST, Cola_Piezas_3);
-				list_file(FIRST, Montacargas);
-				list_file(FIRST, Montacargas);
-				list_file(FIRST, Montacargas);
-			}
+		while ((list_size[Cola_Piezas_3] > 0) & (list_size[Montacargas] <= 3)) {
+			list_remove(FIRST, Cola_Piezas_3);
+			list_file(FIRST, Montacargas);
+			list_file(FIRST, Montacargas);
+			list_file(FIRST, Montacargas);
 		}
 		break;
 	case 4:
-		while (list_size[Cola_Piezas_4] > 0) {
-			if (list_size[Montacargas] <= 3) {
-				list_remove(FIRST, Cola_Piezas_4);
-				list_file(FIRST, Montacargas);
-				list_file(FIRST, Montacargas);
-				list_file(FIRST, Montacargas);
-			}
+		while ((list_size[Cola_Piezas_4] > 0) & (list_size[Montacargas] <= 3)) {
+			list_remove(FIRST, Cola_Piezas_4);
+			list_file(FIRST, Montacargas);
+			list_file(FIRST, Montacargas);
+			list_file(FIRST, Montacargas);	
 		}
 		break;
 	}
@@ -235,6 +229,17 @@ void Rutina_Vaciar_Montacargas(void) {
 void reporte(void)  
 {
 	
+	filest(Cola_Piezas_1);
+	printf("\nDemora media en cola Piezas 1    : %f Hs\n ", transfer[1]/60);
+
+	filest(Cola_Piezas_2);
+	printf("\nDemora media en cola Piezas 2    : %f Hs\n ", transfer[1]/60);
+
+	filest(Cola_Piezas_3);
+	printf("\nDemora media en cola Piezas 3    : %f Hs\n ", transfer[1]/60);
+
+	filest(Cola_Piezas_4);
+	printf("\nDemora media en cola Piezas 4    : %f Hs\n ", transfer[1]/60);
 	/*
 	sampst(0.0, -Demora_B_Limpieza);
 	printf("\nDemora media en cola limpieza, pieza B      : %f Horas\n ", transfer[1]/60);
