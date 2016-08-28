@@ -6,12 +6,19 @@
 #include <stdlib.h> 
 
 /*Eventos*/
-#define Fin_Generacion_Pieza           1
+#define Llegada_Camion                 1
+#define Fin_Carga_Silo                 2
+#define Llegada_tren                   3
+#define Fin_Carga_Tren                 4
+#define Inicio_Jornada_Laboral         5
+#define Fin_Jornada_Laboral            6
 
 
 /*Colas*/
-#define Cola_Piezas_1                  1  
-
+#define Silo_1                         1  
+#define Silo_2                         2  
+#define Silo_3                         3  
+#define Cola_Camiones                  4
 
 /*Servidores, continuar numeracion de las colas*/
 #define Montacargas                    5
@@ -28,15 +35,18 @@
 /* Declaraci¢n de variables propias */
 
 float ;
-int ;
+int timepo_proximo_tren;
 bool ;
 
 
 /* Declaraci¢n de Funciones propias */
 
-void Rutina_Fin_Generacion_Pieza(void);
-void Rutina_Cargar_Montacargas(void);
-void Rutina_Vaciar_Montacargas(void);
+void Rutina_Llegada_Camion(void);
+void Rutina_Fin_Carga_Silo(void);
+void Rutina_Llegada_Tren(void);
+void Rutina_Fin_Carga_Tren(void);
+void Rutina_Inicio_Jornada_Laboral(void);
+void Rutina_Fin_Jornada_Laboral(void);
 void inicializa(void);
 void reporte(void);
 
@@ -57,7 +67,7 @@ int main()  /* Main function. */
 	/* Ejecutar la simulaci¢n. */
 
 
-	while (sim_time <= 7200)
+	while (sim_time <= 10080)
 	{
 		/* Determinar pr¢ximo Evento */
  		timing();
@@ -67,14 +77,23 @@ int main()  /* Main function. */
 		switch (next_event_type)
 		{
 			
-		case Fin_Generacion_Pieza:
-			Rutina_Fin_Generacion_Pieza();
+		case Llegada_Camion:
+			Rutina_Llegada_Camion();
 			break;
-		case Cargar_Montacargas:
-			Rutina_Cargar_Montacargas();
+		case Fin_Carga_Silo:
+			Rutina_Fin_Carga_Silo();
 			break;
-		case Vaciar_Montacargas:
-			Rutina_Vaciar_Montacargas();
+		case Llegada_tren:
+			Rutina_Llegada_Tren();
+			break;
+		case Fin_Carga_Tren:
+			Rutina_Fin_Carga_Tren();
+			break;
+		case Inicio_Jornada_Laboral:
+			Rutina_Inicio_Jornada_Laboral();
+			break;
+		case Fin_Jornada_Laboral:
+			Rutina_Fin_Jornada_Laboral();
 			break;
 		}
 	}
@@ -88,25 +107,40 @@ int main()  /* Main function. */
 
 void inicializa(void)  /* Inicializar el Sistema */
 {
+
+	timepo_proximo_tren = 1440;
 	/* Se carga el primer Arribo en la Lista de Eventos */
-	
+	transfer[1] = sim_time + timepo_proximo_tren;
+	transfer[2] = Llegada_tren;
+	list_file(INCREASING,LIST_EVENT);
 }
 
-void Rutina_Fin_Generacion_Pieza(void)
+void Rutina_Inicio_Jornada_Laboral(void)
 {
 	
 
 }
 
-void Rutina_Cargar_Montacargas(void) {
+void Rutina_Fin_Jornada_Laboral(void) {
 
 	
 }
 
-void Rutina_Vaciar_Montacargas(void) {
+void Rutina_Llegada_Camion(void) {
 
-	
-	
+}
+
+void Rutina_Fin_Carga_Silo(void) {
+
+}
+
+void Rutina_Llegada_Tren(void) {
+
+	transfer[1] = sim_time +
+}
+
+void Rutina_Fin_Carga_Tren(void) {
+
 }
 
 
