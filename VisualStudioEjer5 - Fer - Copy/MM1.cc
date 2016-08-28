@@ -25,6 +25,7 @@
 #define Demora_Cola_3                  3
 #define Demora_Cola_4                  4
 #define Uso_Tecnico_1                  5
+#define Porcentaje_Repite_Circuito     6
 
 
 #define Media_Procesador_limpieza      1
@@ -199,6 +200,7 @@ void Rutina_Cargar_Montacargas(void) {
 			transfer[2] = Vaciar_Montacargas;
 			transfer[3] = 0;
 			list_file(INCREASING, LIST_EVENT);
+			timest(0, Porcentaje_Repite_Circuito);
 		}
 		else
 		{
@@ -206,6 +208,7 @@ void Rutina_Cargar_Montacargas(void) {
 			transfer[2] = Cargar_Montacargas;
 			transfer[3] = 1;
 			list_file(INCREASING, LIST_EVENT);
+			timest(1, Porcentaje_Repite_Circuito);
 		}
 	}
 	else {
@@ -257,6 +260,11 @@ void reporte(void)
 	printf("\nNumero medio cola 3           : %f \n ", transfer[1]);
 	filest(Cola_Piezas_4);
 	printf("\nNumero medio cola 4           : %f \n ", transfer[1]);
+	filest(Montacargas);
+	printf("\nNumero medio Montacargas          : %f \n ", transfer[1]);
+
+	timest(0.0, -Porcentaje_Repite_Circuito);
+	printf("\nPorcentaje de veces que se repite el circuito antes de descargar         : %f \n ", transfer[1]);
 
 	/*
 	sampst(0.0, -Demora_B_Limpieza);
