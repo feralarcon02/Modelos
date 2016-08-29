@@ -32,6 +32,7 @@
 #define Demora_B_Control_Hum           4
 #define Demora_Espera_Ensamblado_A     5
 #define Demora_Espera_Ensamblado_B     6
+#define Demora_Procesamiento_General   7
 
 #define Media_Procesador_limpieza      1
 #define Media_Procesamiento_Ensamblado 2
@@ -39,8 +40,8 @@
 
 /* Declaraci¢n de variables propias */
 
-float  min_arribo_limp_ref, max_arribo_limp_ref, tiempo_constante_limpieza, media_lub_calib_A, media_timepo_ensamblado;
-int pieza, Proc_limpieza;
+float x, min_arribo_limp_ref, max_arribo_limp_ref, tiempo_constante_limpieza, media_lub_calib_A, media_timepo_ensamblado, Total_piezas_atendidas;
+int pieza, Proc_limpieza, B_Rechazadas, Productos_8_hs;
 bool bandera;
 
 
@@ -117,6 +118,9 @@ void inicializa(void)  /* Inicializar el Sistema */
 	media_lub_calib_A = 3.5;
 	media_timepo_ensamblado = 3.1;
 	Proc_limpieza = 0;
+	B_Rechazadas = 0;
+	Productos_8_hs = 0;
+	Total_piezas_atendidas = 0;
 
 	transfer[1] = sim_time + uniform(min_arribo_limp_ref, max_arribo_limp_ref, Arribo_Limpieza_Refinacion);
 	transfer[2] = Arribo_Limpieza_Refinacion;
@@ -151,6 +155,7 @@ void Rutina_Arribo_Limpieza_Ref(void)
 		}
 		transfer[1] = sim_time + tiempo_constante_limpieza;
 		transfer[2] = Finaliza_Limpieza_Refinacion;
+		transfer[5] = sim_time;
 		list_file(INCREASING, LIST_EVENT);
 		list_file(FIRST, Procesador_Limpieza);
 		timest(1, Media_Procesador_limpieza);
@@ -161,18 +166,19 @@ void Rutina_Arribo_Limpieza_Ref(void)
 
 void Rutina_Fin_Limpieza_Ref(void) {
 
+
 	if (transfer[3] == 1) {
 		if (list_size[Procesador_Lubic_A] > 0) {
 			transfer[1] = sim_time;
 			transfer[2] = Fin_Lub_Calib_A;
 			list_file(LAST, Cola_Espera_Lub_A);
-			list_file(FIRST, Procesador_Lubic_A);
 		}
 		else {
 			transfer[1] = sim_time + expon(media_lub_calib_A, Fin_Lub_Calib_A);
 			transfer[2] = Fin_Lub_Calib_A;
 			list_file(INCREASING, LIST_EVENT);
 			list_file(FIRST, Procesador_Lubic_A);
+			float t = list_size[Procesador_Lubic_A];
 			sampst(0, Cola_Espera_Lub_A);
 		}
 	}
@@ -200,7 +206,7 @@ void Rutina_Fin_Limpieza_Ref(void) {
 		}
 		transfer[1] = sim_time + tiempo_constante_limpieza;
 		transfer[2] = Finaliza_Limpieza_Refinacion;
-		transfer[3];
+		transfer[5] = sim_time;
 		list_file(INCREASING, LIST_EVENT);
 	}
 	else {
@@ -211,20 +217,28 @@ void Rutina_Fin_Limpieza_Ref(void) {
 
 void Rutina_Fin_Lub_Calib_A(void) {
 
+	x = transfer[5];
+
 	if (list_size[Procesador_Ensamblado] == 2) {
 		transfer[1] = sim_time;
 		transfer[2] = Fin_Ensamblado;
 		transfer[3] = Pieza_A;
 		list_file(LAST, Cola_Ensamblado_A);
 	}
-	else if(list_size[Procesador_Ensamblado] == 1){  /*En toda esta parte me fijo de meter 2 elementos en Ensamblado, ya que tienen que haber 
-													 2 para que se genere una finalizacion*/
+	else if(list_size[Procesador_Ensamblado] == 1){  /*En toda esta parte me fijo de meter 2 elementos en Ensamblado, ya que tienen que haber 2 para que se genere una finalizacion*/
 		list_remove(FIRST, Procesador_Ensamblado);
-		int x = transfer[1];
+		int i = transfer[1];
 		list_file(FIRST, Procesador_Ensamblado);
-		if (x == 2) {
+		transfer[5] = x;
+		if (i == 2) {
 			transfer[1] = Pieza_A;
 			list_file(FIRST, Procesador_Ensamblado);
+			if (list_size[Procesador_Ensamblado] == 2) { /*Solo si hay 2 elementos en el procesador de ensamblado, genero una finalizacion*/
+				transfer[1] = sim_time + expon(media_timepo_ensamblado, Fin_Ensamblado);
+				transfer[2] = Fin_Ensamblado;
+				list_file(INCREASING, LIST_EVENT);
+				timest(1, Media_Procesamiento_Ensamblado);
+			}
 		}
 		else {
 			transfer[1] = sim_time;
@@ -236,13 +250,14 @@ void Rutina_Fin_Lub_Calib_A(void) {
 	else {
 		transfer[1] = Pieza_A;
 		list_file(FIRST, Procesador_Ensamblado);
+		if (list_size[Procesador_Ensamblado] == 2) { /*Solo si hay 2 elementos en el procesador de ensamblado, genero una finalizacion*/
+			transfer[1] = sim_time + expon(media_timepo_ensamblado, Fin_Ensamblado);
+			transfer[2] = Fin_Ensamblado;
+			list_file(INCREASING, LIST_EVENT);
+			timest(1, Media_Procesamiento_Ensamblado);
+		}
 	}
-	if (list_size[Procesador_Ensamblado] == 2) { /*Solo si hay 2 elementos en el procesador de ensamblado, genero una finalizacion*/
-		transfer[1] = sim_time + expon(media_timepo_ensamblado, Fin_Ensamblado);
-		transfer[2] = Fin_Ensamblado;
-		list_file(INCREASING, LIST_EVENT);
-		timest(1, Media_Procesamiento_Ensamblado);
-	}
+	
 	if (list_size[Cola_Espera_Lub_A] > 0) {
 		list_remove(FIRST, Cola_Espera_Lub_A);
 		sampst(sim_time - transfer[1], Demora_A_Lubricacion);
@@ -250,12 +265,16 @@ void Rutina_Fin_Lub_Calib_A(void) {
 		transfer[2] = Fin_Lub_Calib_A;
 		list_file(INCREASING, LIST_EVENT);
 	}
-	list_remove(FIRST, Procesador_Lubic_A);
+	else {
+		list_remove(FIRST, Procesador_Lubic_A);
+	}
+	
 }
 
 
 void Rutina_Fin_Control_Humano_B(void) {
 	
+	list_remove(FIRST, Procesador_Control_Human_B);
 	if (lcgrand(1) > 0.05) {
 		if (list_size[Procesador_Ensamblado] > 0) {  /*Siempre pongo LAST el B y FIRST el A*/
 			list_remove(LAST, Procesador_Ensamblado);
@@ -286,6 +305,7 @@ void Rutina_Fin_Control_Humano_B(void) {
 			transfer[3] = Pieza_B;
 			list_file(LAST, Cola_Espera_Limpieza_Ref);
 		}
+		B_Rechazadas++;
 	}
 
 	if (list_size[Procesador_Ensamblado] == 2) { /*Solo si hay 2 elementos en el procesador de ensamblado, genero una finalizacion*/
@@ -303,7 +323,7 @@ void Rutina_Fin_Control_Humano_B(void) {
 		list_file(INCREASING, LIST_EVENT);
 		list_file(FIRST, Procesador_Control_Human_B);
 	}
-	list_remove(FIRST, Procesador_Control_Human_B);
+	
 }
 
 void Rutina_Fin_Ensamblado(void) {
@@ -319,7 +339,9 @@ void Rutina_Fin_Ensamblado(void) {
 	}
 	while (list_size[Procesador_Ensamblado] > 0) {
 		list_remove(FIRST, Procesador_Ensamblado);
+		sampst(sim_time - transfer[5], Demora_Procesamiento_General);
 	}
+	
 	
 	if (list_size[Cola_Ensamblado_B] > 0) {
 		list_remove(FIRST, Cola_Ensamblado_B);
@@ -339,7 +361,14 @@ void Rutina_Fin_Ensamblado(void) {
 		timest(1, Media_Procesamiento_Ensamblado);
 	}
 
-	
+	if (sim_time <= 480) {
+		Productos_8_hs++;
+		Productos_8_hs++;
+	}
+
+	Total_piezas_atendidas++;
+	Total_piezas_atendidas++;
+
 }
 
 void reporte(void)  
@@ -351,6 +380,8 @@ void reporte(void)
 	/*filest(Procesador_Limpieza);*/
 	timest(0.0, -Media_Procesador_limpieza);
 	printf("\nUtilizacion del Procesador Limpieza      : %f \n ", transfer[1]);
+
+	float x = transfer[1];
 
 	printf("\nUtilizacion del Procesador Lado A      : %f \n ", filest(Procesador_Lubic_A));   /*A estos 3 que siguen los hice de esta forma*/
 																								/*Porque me dio paja cambiar todo, y tambien sirve*/
@@ -378,6 +409,16 @@ void reporte(void)
 
 	printf("\n No me gustan los valores que me da.. Me parece raro que la espera del lado de A sea menor \n que la del de B ");
 	printf(" porque supuestamente del lado de B lo controla un humano y tarda mas.. :/ \n\n");
+
+	/*sampst(0.0, -Demora_Procesamiento_General);
+	printf("\nTiempo medio permanencia de una pieza en el sistema      : %f hs \n ", transfer[1]/60);*/
+
+	/*printf("\nTiempo medio permanencia de una pieza en el sistema      : %f \n ", 21600/Total_piezas_atendidas);*/
+
+	printf("\nCantidad de piezas B rechazadas      :  %i  \n", B_Rechazadas);
+	
+	printf("\nProductos terminados en una jornada de 8 horas      :  %i  \n", Productos_8_hs);
+	
 	/*sampst(0.0, -Demora_Cola_Estacion_1);
 	printf("\nDemora media en cola estacion 1      : %f \n ", transfer[1]);
 	
