@@ -24,18 +24,18 @@
 #define Uso_Maquinaria                 5
 
 /*Demoras, otra numeracion distinta*/
-#define Demora_Cola_1                  1
+#define CamionA                        1
+#define CamionB                        2
+#define DemoraColaA                    3
+#define DemoraColaB                    4 
 
 
-
-#define Media_Procesador_limpieza      1
-#define Media_Procesamiento_Ensamblado 2
 
 
 /* Declaraci¢n de variables propias */
 
-float ;
-int timepo_descarga_cam_gra, timepo_descarga_cam_chi, capacidad_camion_chico, capacidad_camion_grande, tiempo_llegada_proximo_camion, timepo_carga_tren, timepo_proximo_tren, cant_silo_1, cant_silo_2, cant_silo_3, cant_tren;
+float silo_que_toca, timepo_descarga_cam_gra, timepo_descarga_cam_chi, capacidad_camion_chico, capacidad_camion_grande, tiempo_llegada_proximo_camion, timepo_carga_tren, timepo_proximo_tren, cant_silo_1, cant_tren, cant_silo_2, cant_silo_3;
+int camion_a, camion_b;
 bool trabajando;
 
 
@@ -118,11 +118,13 @@ void inicializa(void)  /* Inicializar el Sistema */
 	cant_silo_1 = 100;
 	cant_silo_2 = 0;
 	cant_silo_3 = 0;
+	cant_tren = 0;
 	trabajando = false;
 
 	/* Se carga el primer Arribo en la Lista de Eventos */
 	transfer[1] = sim_time;
 	transfer[2] = Llegada_tren;
+	transfer[3] = 1;
 	list_file(INCREASING, LIST_EVENT);
 
 	transfer[1] = sim_time + 480;
@@ -152,10 +154,14 @@ void Rutina_Inicio_Jornada_Laboral(void){
 void Rutina_Fin_Jornada_Laboral(void) {
 
 	transfer[1] = sim_time + 840;
-	transfer[2] = Fin_Jornada_Laboral;
+	transfer[2] = Inicio_Jornada_Laboral;
 	list_file(INCREASING, LIST_EVENT);
 
 	trabajando = false;
+
+	if (list_size[Uso_Maquinaria] == 1) {
+		list_remove(FIRST, Uso_Maquinaria);
+	}
 }
 
 void Rutina_Llegada_Camion(void) {
@@ -163,6 +169,8 @@ void Rutina_Llegada_Camion(void) {
 	transfer[1] = sim_time + expon(tiempo_llegada_proximo_camion, Llegada_Camion);
 	transfer[2] = Llegada_Camion;
 	list_file(INCREASING, LIST_EVENT);
+
+	float hola = list_size[Uso_Maquinaria];
 
 	if (lcgrand(1) <= 0.3) {
 		transfer[1] = sim_time + timepo_descarga_cam_chi;
@@ -173,8 +181,7 @@ void Rutina_Llegada_Camion(void) {
 		transfer[3] = capacidad_camion_grande;
 	}
 
-	if ((trabajando == true) & (list_size[Uso_Maquinaria] == 0)) {
-		list_file(FIRST, Uso_Maquinaria);
+	if ((trabajando == true) && (list_size[Uso_Maquinaria] == 0)) {
 		int cambio = 0;
 		int falta_descargar = transfer[3];
 		while (falta_descargar > 0) {  /*Lleno los silos correspondientes*/
@@ -209,14 +216,24 @@ void Rutina_Llegada_Camion(void) {
 		}
 		transfer[2] = Fin_Carga_Silo;
 		list_file(INCREASING, LIST_EVENT);
+		list_file(FIRST, Uso_Maquinaria);
 	}
 	else {
+		if (transfer[3] == capacidad_camion_chico) {
+			camion_a++;
+			sampst(camion_a, CamionA);
+		}
+		else {
+			camion_b++;
+			sampst(camion_b, CamionB);
+		}
 		transfer[1] = sim_time;
 		list_file(LAST, Cola_Camiones);
 	}
 }
 
 void Rutina_Fin_Carga_Silo(void) {
+	
 	
 	if (list_size[Uso_Maquinaria] == 1) {
 		list_remove(FIRST, Uso_Maquinaria);
@@ -226,6 +243,16 @@ void Rutina_Fin_Carga_Silo(void) {
 		if (list_size[Cola_Camiones] > 0) {
 			list_file(FIRST, Uso_Maquinaria);
 			list_remove(FIRST, Cola_Camiones);
+			if (transfer[3] == capacidad_camion_chico) {
+				camion_a--;
+				sampst(camion_a, CamionA);
+				timest(sim_time - transfer[1], DemoraColaA);
+			}
+			else {
+				camion_b--;
+				sampst(camion_b, CamionB);
+				timest(sim_time - transfer[1], DemoraColaB);
+			}
 			if (transfer[3] == capacidad_camion_chico) {
 				transfer[1] = sim_time + timepo_descarga_cam_chi;
 			}
@@ -271,19 +298,84 @@ void Rutina_Fin_Carga_Silo(void) {
 
 void Rutina_Llegada_Tren(void) {
 
+	int x = transfer[3];
+
 	transfer[1] = sim_time + timepo_proximo_tren;
 	transfer[2] = Llegada_tren;
+	if (transfer[3] == 3) {
+		transfer[3] = 1;
+	}
+	else {
+		transfer[3]++;
+	}
 	list_file(INCREASING, LIST_EVENT);
+
+	transfer[1] = sim_time + 40;
+	transfer[2] = Fin_Carga_Tren;
+	list_file(INCREASING, LIST_EVENT);
+
+	int count = 0;
+	while (cant_tren < 400) {
+		count++;
+		if (count > 400) {
+			break;
+		}
+		switch (x)
+		{
+		case 1:
+			if (cant_silo_1 > 0) {
+				cant_silo_1--;
+				cant_tren++;
+			}
+			else {
+				x = 2;
+			}
+			break;
+		case 2:
+			if (cant_silo_2 > 0) {
+				cant_silo_2--;
+				cant_tren++;
+			}
+			else {
+				x = 3;
+			}
+			break;
+		case 3:
+			if (cant_silo_3 > 0) {
+				cant_silo_3--;
+				cant_tren++;
+			}
+			else {
+				x = 1;
+			}
+			break;
+		}
+	}
+
 }
 
 void Rutina_Fin_Carga_Tren(void) {
 
+	cant_tren = 0;
 }
 
 
 void reporte(void)  
 {
-	
+	filest(Uso_Maquinaria);
+	printf("\nUtilizacion maquinaria      : %.2f %%%\n ", transfer[1] * 100);
+
+	sampst(0.0, -CamionA);
+	printf("\nCantidad media de camiones chicos en cola     : %.2f \n ", transfer[1]);
+
+	sampst(0.0, -CamionB);
+	printf("\nCantidad media de camiones grandes en cola     : %.2f \n ", transfer[1]);
+
+	timest(0.0, -DemoraColaA);
+	printf("\nDemora en cola camiones chicos     : %.2f hs\n ", transfer[1]/60);
+
+	timest(0.0, -DemoraColaB);
+	printf("\nDemora en cola camiones grandes    : %.2f hs\n ", transfer[1]/60);
 
 	/*
 	sampst(0.0, -Demora_B_Limpieza);
