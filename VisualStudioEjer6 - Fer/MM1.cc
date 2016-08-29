@@ -249,24 +249,25 @@ void Rutina_Fin_Carga_Silo(void) {
 		if (list_size[Cola_Camiones] > 0) {
 			list_file(FIRST, Uso_Maquinaria);
 			list_remove(FIRST, Cola_Camiones);
+			t3 = transfer[3];
 			if (transfer[3] == capacidad_camion_chico) {
 				sampst(sim_time - transfer[1], DemoraColaA);
 				list_remove(FIRST, CamionA);
-				transfer[1] = sim_time + timepo_descarga_cam_chi;
+				t1 = sim_time + timepo_descarga_cam_chi;
 			}
 			else {
 				sampst(sim_time - transfer[1], DemoraColaB);
 				list_remove(FIRST, CamionB);
-				transfer[1] = sim_time + timepo_descarga_cam_gra;
+				t1 = sim_time + timepo_descarga_cam_gra;
 			}
-			int falta_descargar = transfer[3];
+			int falta_descargar = t3;
 			while (falta_descargar > 0) {  /*Lleno los silos correspondientes*/
 					if (cant_silo_1 < 240) {
 						cant_silo_1++;
 						falta_descargar--;
 					}
 					else {
-						transfer[1] = transfer[1] + 5;
+						t1 = t1 + 5;
 						break;
 					}
 				}
@@ -276,7 +277,7 @@ void Rutina_Fin_Carga_Silo(void) {
 						falta_descargar--;
 					}
 					else {
-						transfer[1] = transfer[1] + 5;
+						t1 = t1 + 5;
 						break;
 					}
 				}
@@ -286,11 +287,13 @@ void Rutina_Fin_Carga_Silo(void) {
 					falta_descargar--;
 				}
 				else {
-					transfer[1] = transfer[1] + 5;
+					t1 = t1 + 5;
 					break;
 				}
 			}
+			transfer[1] = t1;
 			transfer[2] = Fin_Carga_Silo;
+			transfer[3] = t3;
 			list_file(INCREASING, LIST_EVENT);
 		}
 	}
