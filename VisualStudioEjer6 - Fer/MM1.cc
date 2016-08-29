@@ -35,7 +35,7 @@
 /* Declaraci¢n de variables propias */
 
 float ;
-int timepo_proximo_tren;
+int timepo_proximo_tren, silo_1, silo_2, silo_3;
 bool ;
 
 
@@ -67,7 +67,7 @@ int main()  /* Main function. */
 	/* Ejecutar la simulaci¢n. */
 
 
-	while (sim_time <= 10080)
+	while (sim_time <= 7200)
 	{
 		/* Determinar pr¢ximo Evento */
  		timing();
@@ -109,14 +109,19 @@ void inicializa(void)  /* Inicializar el Sistema */
 {
 
 	timepo_proximo_tren = 1440;
+
+
 	/* Se carga el primer Arribo en la Lista de Eventos */
-	transfer[1] = sim_time + timepo_proximo_tren;
+	transfer[1] = sim_time;
 	transfer[2] = Llegada_tren;
 	list_file(INCREASING,LIST_EVENT);
+
+	transfer[1] = sim_time + 480;
+	transfer[2] = Inicio_Jornada_Laboral;
+	list_file(INCREASING, LIST_EVENT); 
 }
 
-void Rutina_Inicio_Jornada_Laboral(void)
-{
+void Rutina_Inicio_Jornada_Laboral(void){
 	
 
 }
@@ -136,7 +141,9 @@ void Rutina_Fin_Carga_Silo(void) {
 
 void Rutina_Llegada_Tren(void) {
 
-	transfer[1] = sim_time +
+	transfer[1] = sim_time + timepo_proximo_tren;
+	transfer[2] = Llegada_tren;
+	list_file(INCREASING, LIST_EVENT);
 }
 
 void Rutina_Fin_Carga_Tren(void) {
@@ -146,7 +153,6 @@ void Rutina_Fin_Carga_Tren(void) {
 
 void reporte(void)  
 {
-	
 	
 
 	/*
