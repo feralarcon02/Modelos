@@ -178,6 +178,7 @@ void Rutina_Fin_Limpieza_Ref(void) {
 			transfer[2] = Fin_Lub_Calib_A;
 			list_file(INCREASING, LIST_EVENT);
 			list_file(FIRST, Procesador_Lubic_A);
+			float t = list_size[Procesador_Lubic_A];
 			sampst(0, Cola_Espera_Lub_A);
 		}
 	}
