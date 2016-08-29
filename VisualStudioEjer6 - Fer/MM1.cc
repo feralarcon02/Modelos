@@ -34,7 +34,7 @@
 
 /* Declaraci¢n de variables propias */
 
-float silo_que_toca, timepo_descarga_cam_gra, timepo_descarga_cam_chi, capacidad_camion_chico, capacidad_camion_grande, tiempo_llegada_proximo_camion, timepo_carga_tren, timepo_proximo_tren, cant_silo_1, cant_tren, cant_silo_2, cant_silo_3;
+float t1, t2, t3, silo_que_toca, timepo_descarga_cam_gra, timepo_descarga_cam_chi, capacidad_camion_chico, capacidad_camion_grande, tiempo_llegada_proximo_camion, timepo_carga_tren, timepo_proximo_tren, cant_silo_1, cant_tren, cant_silo_2, cant_silo_3;
 int camion_a, camion_b;
 bool trabajando;
 
@@ -170,15 +170,16 @@ void Rutina_Llegada_Camion(void) {
 	transfer[2] = Llegada_Camion;
 	list_file(INCREASING, LIST_EVENT);
 
+
 	float hola = list_size[Uso_Maquinaria];
 
 	if (lcgrand(1) <= 0.3) {
-		transfer[1] = sim_time + timepo_descarga_cam_chi;
-		transfer[3] = capacidad_camion_chico;
+		t1 = sim_time + timepo_descarga_cam_chi;
+		t3 = capacidad_camion_chico;
 	}
 	else {
-		transfer[1] = sim_time + timepo_descarga_cam_gra;
-		transfer[3] = capacidad_camion_grande;
+		t1 = sim_time + timepo_descarga_cam_gra;
+		t3 = capacidad_camion_grande;
 	}
 
 	if ((trabajando == true) && (list_size[Uso_Maquinaria] == 0)) {
@@ -190,7 +191,7 @@ void Rutina_Llegada_Camion(void) {
 				falta_descargar--;
 			}
 			else {
-				transfer[1] = transfer[1] + 5;
+				t1 = t1 + 5;
 				break;
 			}
 		}
@@ -200,7 +201,7 @@ void Rutina_Llegada_Camion(void) {
 				falta_descargar--;
 			}
 			else {
-				transfer[1] = transfer[1] + 5;
+				t1 = t1 + 5;
 				break;
 			}
 		}
@@ -210,24 +211,29 @@ void Rutina_Llegada_Camion(void) {
 				falta_descargar--;
 			}
 			else {
-				transfer[1] = transfer[1] + 5;
+				t1 = t1 + 5;
 				break;
 			}
 		}
+		transfer[1] = t1;
 		transfer[2] = Fin_Carga_Silo;
+		transfer[3] = t3;
 		list_file(INCREASING, LIST_EVENT);
 		list_file(FIRST, Uso_Maquinaria);
 	}
 	else {
-		if (transfer[3] == capacidad_camion_chico) {
-			camion_a++;
-			sampst(camion_a, CamionA);
+		if (t3 == capacidad_camion_chico) {
+			/*camion_a++;
+			timest(camion_a, CamionA);*/
+			list_file(FIRST, CamionA);
 		}
 		else {
-			camion_b++;
-			sampst(camion_b, CamionB);
+			/*camion_b++;
+			timest(camion_b, CamionB);*/
+			list_file(FIRST, CamionB);
 		}
 		transfer[1] = sim_time;
+		transfer[3] = t3;
 		list_file(LAST, Cola_Camiones);
 	}
 }
@@ -244,19 +250,13 @@ void Rutina_Fin_Carga_Silo(void) {
 			list_file(FIRST, Uso_Maquinaria);
 			list_remove(FIRST, Cola_Camiones);
 			if (transfer[3] == capacidad_camion_chico) {
-				camion_a--;
-				sampst(camion_a, CamionA);
-				timest(sim_time - transfer[1], DemoraColaA);
-			}
-			else {
-				camion_b--;
-				sampst(camion_b, CamionB);
-				timest(sim_time - transfer[1], DemoraColaB);
-			}
-			if (transfer[3] == capacidad_camion_chico) {
+				sampst(sim_time - transfer[1], DemoraColaA);
+				list_remove(FIRST, CamionA);
 				transfer[1] = sim_time + timepo_descarga_cam_chi;
 			}
 			else {
+				sampst(sim_time - transfer[1], DemoraColaB);
+				list_remove(FIRST, CamionB);
 				transfer[1] = sim_time + timepo_descarga_cam_gra;
 			}
 			int falta_descargar = transfer[3];
@@ -365,16 +365,16 @@ void reporte(void)
 	filest(Uso_Maquinaria);
 	printf("\nUtilizacion maquinaria      : %.2f %%%\n ", transfer[1] * 100);
 
-	sampst(0.0, -CamionA);
+	filest(CamionA);
 	printf("\nCantidad media de camiones chicos en cola     : %.2f \n ", transfer[1]);
 
-	sampst(0.0, -CamionB);
+	filest(CamionB);
 	printf("\nCantidad media de camiones grandes en cola     : %.2f \n ", transfer[1]);
 
-	timest(0.0, -DemoraColaA);
+	sampst(0.0, -DemoraColaA);
 	printf("\nDemora en cola camiones chicos     : %.2f hs\n ", transfer[1]/60);
 
-	timest(0.0, -DemoraColaB);
+	sampst(0.0, -DemoraColaB);
 	printf("\nDemora en cola camiones grandes    : %.2f hs\n ", transfer[1]/60);
 
 	/*
