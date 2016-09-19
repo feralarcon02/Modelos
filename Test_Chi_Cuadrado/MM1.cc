@@ -143,7 +143,7 @@ void inicializa(void)  /* Inicializar el Sistema */
 
 void reporte(void)  
 {
-	
+	/*hola chicos*/
 	
 }
 
