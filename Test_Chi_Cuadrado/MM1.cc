@@ -133,7 +133,7 @@ void inicializa(void)  /* Inicializar el Sistema */
 
 	transfer[1] = sim_time + expon(tiempo_llegada_proximo_camion, Llegada_Camion);
 	transfer[2] = Llegada_Camion;
-	list_file(INCREASING, LIST_EVENT);
+	list_file(INCREASING, LIST_EVENT); //Hola
 	
 	timest(cant_silo_1, Media_Cant_Silo_1);//jefjdwkdjekjfkejrrgjgjtegrtnwjbetlrthjglkerkkerkk11
 }
