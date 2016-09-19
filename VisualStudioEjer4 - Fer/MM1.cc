@@ -124,7 +124,7 @@ void Rutina_Inicio_Jornada_Laboral(void)
 
 	transfer[1] = sim_time + jornada_laboral;
 	transfer[2] = Fin_Jornada_Laboral;
-	trabajando = false;
+	trabajando = true;
 
 	list_file(INCREASING, LIST_EVENT);
 	if (list_size[Cola_Espera_Arreglo] > 0) {
