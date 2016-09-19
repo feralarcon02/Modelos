@@ -135,7 +135,7 @@ void inicializa(void)  /* Inicializar el Sistema */
 	transfer[2] = Llegada_Camion;
 	list_file(INCREASING, LIST_EVENT);
 	
-	timest(cant_silo_1, Media_Cant_Silo_1);
+	timest(cant_silo_1, Media_Cant_Silo_1);//jefjdwkdjekjfkejrrgjgjtegrtnwjbetlrthjglkerkkerkk11
 }
 
 
